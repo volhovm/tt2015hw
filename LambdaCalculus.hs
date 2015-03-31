@@ -2,9 +2,6 @@
 
 module LambdaCalculus where
 
-main :: IO ()
-main = getLine >>= ( \x → putStrLn $ makeNicer x)
-
-
-makeNicer :: String → String
-makeNicer = (++) "input: "
+type Literal = String
+data Lambda = App Lambda Lambda | Abs Literal Lambda | Var Literal
+            deriving Show
