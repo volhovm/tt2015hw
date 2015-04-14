@@ -4,29 +4,36 @@ module LambdaParser where
 import LambdaCalculus(Lambda(..))
 import Text.ParserCombinators.Parsec
 import Control.Applicative((<*>), (<$>))
-import Data.Functor.Compose
+--import Data.Functor.Compose
 
-lambdaTerm = atomic <|> abstraction <|> application
+lambdaTerm :: Parser Lambda
+lambdaTerm =  abstraction <|> application <|> atomic
+
+parseTerm :: Parser Lambda
+parseTerm = application <|> parseUnit
+
+parseUnit :: Parser Lambda
+parseUnit = (Var <$> variable) <|> abstraction <|> brackets parseTerm
 
 application :: Parser Lambda
-application = do
-  p <- lambdaTerm
-  space
-  q <- lambdaTerm
-  return $ App p q
+application = try $ do
+  a ← parseUnit
+  spaces
+  b ← parseTerm
+  return $ App a b
 
 abstraction :: Parser Lambda
 abstraction = do
   try $ char '\\'
-  v <- variable
+  v ← variable
   char '.'
-  a <- lambdaTerm
+  a ← parseTerm
   return $ Abs v a
 
 brackets :: Parser a → Parser a
 brackets s = do
   try $ char '('
-  a <- s
+  a ← s
   char ')'
   return a
 
@@ -37,4 +44,4 @@ variable :: Parser String
 variable = (:) <$> try lower <*> many digit
 
 parseLambda :: String → Either ParseError Lambda
-parseLambda = parse lambdaTerm "Lambda parsing failed"
+parseLambda = parse parseTerm "Lambda parsing failed"
