@@ -1,13 +1,9 @@
 {-# LANGUAGE UnicodeSyntax #-}
 module LambdaParser where
 
-import LambdaCalculus(Lambda(..))
 import Text.ParserCombinators.Parsec
+import LambdaCalculus(Lambda(..))
 import Control.Applicative((<*>), (<$>))
---import Data.Functor.Compose
-
-lambdaTerm :: Parser Lambda
-lambdaTerm =  abstraction <|> application <|> atomic
 
 parseTerm :: Parser Lambda
 parseTerm = application <|> parseUnit
@@ -15,12 +11,17 @@ parseTerm = application <|> parseUnit
 parseUnit :: Parser Lambda
 parseUnit = (Var <$> variable) <|> abstraction <|> brackets parseTerm
 
+lexem :: Parser a → Parser a
+lexem p = do
+  x ← p
+  optional spaces
+  return x
+
 application :: Parser Lambda
 application = try $ do
   a ← parseUnit
-  spaces
-  b ← parseTerm
-  return $ App a b
+  b ← many1 (try $ space >> parseUnit)
+  return $ foldl1 App (a : b)
 
 abstraction :: Parser Lambda
 abstraction = do
@@ -38,10 +39,17 @@ brackets s = do
   return a
 
 atomic :: Parser Lambda
-atomic = brackets lambdaTerm <|> (Var <$> variable)
+atomic = brackets parseTerm <|> (Var <$> variable)
 
 variable :: Parser String
-variable = (:) <$> try lower <*> many digit
+variable = (:) <$> (try lower) <*> (many digit)
+
+parseLine :: Parser Lambda
+parseLine = do
+  t ← parseTerm
+  spaces
+  optional $ char '\n'
+  return t
 
 parseLambda :: String → Either ParseError Lambda
-parseLambda = parse parseTerm "Lambda parsing failed"
+parseLambda s = parse parseLine "Lambda parsing failed" s
