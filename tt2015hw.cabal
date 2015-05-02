@@ -37,3 +37,15 @@ executable HW2
                      , transformers >= 0.3.0.0
   -- hs-source-dirs:
   default-language:    Haskell2010
+
+executable HW3
+  main-is:             HW3.hs
+  -- other-modules:
+  other-extensions:    UnicodeSyntax
+  build-depends:       base >=4.6 && <4.7
+                     , containers >= 0.5.0.0
+                     , containers >= 0.5.0.0
+                     , parsec
+                     , transformers >= 0.3.0.0
+  -- hs-source-dirs:
+  default-language:    Haskell2010

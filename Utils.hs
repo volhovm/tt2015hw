@@ -3,6 +3,8 @@ module Utils where
 
 import System.IO
 import System.Environment
+import LambdaParser
+import LambdaCalculus
 
 processIO :: (Handle → Handle → IO()) → IO()
 processIO handling = do
@@ -12,3 +14,8 @@ processIO handling = do
   handling input output
   hClose input
   hClose output
+
+pl :: String → Lambda
+pl s = case parseLambda s of
+  Left _ → pl "e"
+  Right l → l

@@ -2,7 +2,7 @@
 module LambdaParser where
 
 import Text.ParserCombinators.Parsec
-import LambdaCalculus(Lambda(..))
+import LambdaCalculus
 import Control.Applicative((<*>), (<$>))
 
 parseTerm :: Parser Lambda
@@ -52,4 +52,12 @@ parseLine = do
   return t
 
 parseLambda :: String → Either ParseError Lambda
-parseLambda s = parse parseLine "Lambda parsing failed" s
+parseLambda = parse parseLine "Lambda parsing failed"
+
+parseSubstitution :: String → Either ParseError (Lambda, Literal, Lambda)
+parseSubstitution = parse (do t ← parseTerm
+                              char '['
+                              v ← variable
+                              string ":="
+                              s ← parseTerm
+                              return $ (t, v, s)) "mda"
