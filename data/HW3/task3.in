@@ -1,1 +1,1 @@
-\x.x y z \f.f \x.z f f[z:=\g.f]
+\x.x f z \f.f \z.z f f[f:=\g.z x]

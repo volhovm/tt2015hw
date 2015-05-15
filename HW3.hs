@@ -4,8 +4,6 @@ module Main where
 
 import System.IO
 import LambdaCalculus
-import Data.Set (elems)
-import Data.List (intersperse)
 import LambdaParser(parseSubstitution)
 import Utils
 
@@ -18,6 +16,6 @@ main = processIO $ \input output → do
    Right (l1, var, l2) → do putStrLn res
                             hPutStr output res
                             where res = case substitute l1 var l2 of
-                                        Nothing → "Нет свободы для подстановки " ++
-                                                  "для переменной " ++ var
-                                        Just l  → show l
+                                        Left v → "Нет свободы для подстановки " ++
+                                                  "для переменной " ++ v
+                                        Right l  → outputView l

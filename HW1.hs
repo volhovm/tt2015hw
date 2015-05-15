@@ -14,11 +14,4 @@ main = processIO $ \input output → do
   case parseLambda s of
    Left e → putStrLn $ show e
    Right lambda → do putStrLn $ show lambda
-                     hPutStr output $ simpleView lambda
-
-simpleView :: Lambda → String
-simpleView (Var s) = s
-simpleView (App a b) = brackets $ (simpleView a) ++ " " ++ simpleView b
-simpleView (Abs s l) = brackets $ '\\' : (s ++ "." ++ simpleView l)
-
-brackets s = "(" ++ s ++ ")"
+                     hPutStr output $ outputView lambda
