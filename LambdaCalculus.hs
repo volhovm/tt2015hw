@@ -38,6 +38,15 @@ substitute (Abs l r) x a = if or [x == l, member l (freeVars a)]
                            else case substitute r x a of
                                  Left err    → Left err
                                  Right inner → Right $ Abs l inner
+
+reduce :: Lambda → Lambda
+reduce o@(Var _) = o
+reduce o@(App (Abs l x) t) = case substitute x l t of
+  Left _  → o
+  Right r → r
+reduce (App a b) = App (reduce a) (reduce b)
+reduce a = a
+
 --substitute = substitute' empty
 --
 --substitute' :: Set Literal → Lambda → Literal → Lambda → Either Literal Lambda
