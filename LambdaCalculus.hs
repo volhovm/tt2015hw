@@ -1,16 +1,23 @@
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, FlexibleInstances #-}
 
 module LambdaCalculus where
 
+import Data.Char
 import qualified Data.Set as S
 import qualified Data.Map as M
 
 type Literal = String
-data Lambda = App Lambda Lambda | Abs Literal Lambda | Var Literal
+data LambdaG a = App (LambdaG a) (LambdaG a) | Abs a (LambdaG a) | Var a
+type Lambda = LambdaG Literal
 instance Show Lambda where
   show (App a b) = show a ++ " " ++ show b
   show (Abs s l) = "λ" ++ s ++ ".(" ++ show l ++ ")"
   show (Var l) = l
+instance Show (LambdaG Int) where
+  show (App a b) = show a ++ " " ++ show b
+  show (Abs s l) = "λ" ++ show s ++ ".(" ++ show l ++ ")"
+  show (Var l) = show l
+
 
 outputView :: Lambda → String
 outputView (Var s) = s
@@ -49,17 +56,45 @@ instance Show DBn where
   show (DAbs c) = "λ(" ++ show c ++ ")"
 
 
--- M (var → depth), current depth, Lambda
-lambdaToDBn' :: M.Map Literal Int → Int → Lambda → DBn
-lambdaToDBn' m d (Var t) = DVar $ if M.member t m
-                             then d - m M.! t
-                             else d + 1
-lambdaToDBn' m d (App a b) = DApp (lambdaToDBn' m d a) (lambdaToDBn' m d b)
-lambdaToDBn' m d (Abs l a) = DAbs $ lambdaToDBn' (M.insert l d m) (d + 1) a
+-- M (var → depth), current depth, set from free char names to indeces, Lambda
+lambdaToDBn' :: M.Map Literal Int → Int → M.Map String Int → Lambda → (M.Map String Int, DBn)
+lambdaToDBn' m d f (Var t) = if M.member t m
+                             -- if bound
+                             then (f, DVar $ d - m M.! t)
+                             -- if free
+                             else if M.member t f
+                                  -- take already assigned number
+                                  then (f, DVar $ f M.! t)
+                                  -- take max number in map + 1
+                                  else (M.insert t nw f, DVar nw) where
+                                    nw = (M.foldr max d f) + 1
+lambdaToDBn' m d f (App a b) = let (f1, l1) = (lambdaToDBn' m d f a) in
+                                let (f2, l2) = (lambdaToDBn' m d (M.union f f1) b) in
+                                 (f2, DApp l1 l2)
+lambdaToDBn' m d f (Abs l a) = let (nf, nl) = lambdaToDBn' (M.insert l d m) (d + 1) f a in
+                                (nf, DAbs nl)
 
+--  Map [Lambda depth → current depth, current naming, (M (depth → var), DBn)
+dBnToLambda' :: Int → DBn → LambdaG Int
+dBnToLambda' d (DVar t) = if t > d then Var t else Var $ d - t
+dBnToLambda' d (DApp a b) = App (dBnToLambda' d a) (dBnToLambda' d b)
+dBnToLambda' d (DAbs a) = Abs d (dBnToLambda' (d + 1) a)
+
+rename :: LambdaG Int → Lambda
+rename (Var t) = Var $ renameSingle t
+rename (App a b) = App (rename a) (rename b)
+rename (Abs l x) = Abs (renameSingle l) (rename x)
+
+renameSingle :: Int → String
+renameSingle 0 = ""
+renameSingle i | i > 0 = chr ((ord 'a') + i `mod` 26) : renameSingle (i `div` 26)
+renameSingle _ = "<lolwut>"
+
+dBnToLambda :: DBn → Lambda
+dBnToLambda = rename . dBnToLambda' 1
 
 lambdaToDBn :: Lambda → DBn
-lambdaToDBn = lambdaToDBn' M.empty 1
+lambdaToDBn = snd . lambdaToDBn' M.empty 1 M.empty
 
 reduce :: Lambda → Lambda
 reduce o@(Var _) = o
