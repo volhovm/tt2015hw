@@ -2,7 +2,6 @@
 
 module DeBruijn where
 
-import LambdaCalculus (LambdaG(..), Lambda, Literal)
 import Data.Map
 import Data.Char
 
@@ -18,19 +17,6 @@ depth (DApp a b) = max (depth a) $ depth b
 depth (DAbs a) = (depth a) + 1
 
 -- Conversions
-
--- M (var → depth), current depth, set from free char names to indeces, Lambda
-lambdaToDBn' :: Map Literal Int → Int → Lambda → DBn
-lambdaToDBn' m d (Var t) = if member t m
-                             -- if bound
-                             then DVar $ d - m ! t
-                             -- if free
-                             else DVar $ d + rename t + 1
-lambdaToDBn' m d (App a b) = DApp (lambdaToDBn' m d a) (lambdaToDBn' m d b)
-lambdaToDBn' m d (Abs l a) = DAbs $ lambdaToDBn' (insert l d m) (d + 1) a
-
-lambdaToDBn :: Lambda → DBn
-lambdaToDBn = lambdaToDBn' empty 0
 
 --  Map [Lambda depth → current depth, current naming, (M (depth → var), DBn)
 --dBnToLambda' :: Int → DBn → LambdaG Int
@@ -63,11 +49,6 @@ rename :: String → Int
 rename (x:[]) = mapf x
 rename (x:xs) = mapf x + 37 * rename xs
 
-dBnToLambda' :: Int → [String] → Map Int String → DBn → Lambda
-dBnToLambda' d _ m (DVar t)      = Var $ if t > d then renameBack (t - d - 1) else m ! (d - t)
-dBnToLambda' d x m (DApp a b)    = App (dBnToLambda' d x m a) (dBnToLambda' d x m b)
-dBnToLambda' d (x:xs) m (DAbs a) = Abs x (dBnToLambda' (d + 1) xs (insert d x m) a)
-
 freeDBn :: DBn → [Int]
 freeDBn = freeDBn' 0
 
@@ -76,12 +57,7 @@ freeDBn' d (DVar t)   = if t > d then [t - d] else []
 freeDBn' d (DApp a b) = freeDBn' d a ++ freeDBn' d b
 freeDBn' d (DAbs a)   = freeDBn' (d + 1) a
 
-dBnToLambda :: DBn → Lambda
-dBnToLambda t = let possible n = renameBackChars n : possible (n + 1) in
-                 let bounded t = [x | x ← possible 0, notElem (rename x + 1) $ freeDBn t] in
-                  dBnToLambda' 0 (bounded t) empty t
 
--- Substitution
 
 -- Term, depth
 changeFree :: Int → (Int → Int) → DBn → DBn
@@ -109,10 +85,10 @@ reduceDBn :: DBn → DBn
 reduceDBn (DApp (DAbs a) b) = substituteDBn (decrementFree a) b
 reduceDBn t                 = t
 
-nf :: DBn → DBn
-nf o@(DVar _)          = o
-nf (DAbs a)            = DAbs $ nf a
-nf (DApp (DAbs a) b)   = nf $ reduceDBn $ DApp (DAbs $ nf a) $ nf b
-nf (DApp a b)          = case nf a of
-  o@(DAbs _) → reduceDBn $ DApp o $ nf b
-  o          → DApp o $ nf b
+nfDBn :: DBn → DBn
+nfDBn o@(DVar _)          = o
+nfDBn (DAbs a)            = DAbs $ nfDBn a
+nfDBn (DApp (DAbs a) b)   = nfDBn $ reduceDBn $ DApp (DAbs $ nfDBn a) $ nfDBn b
+nfDBn (DApp a b)          = case nfDBn a of
+  o@(DAbs _) → reduceDBn $ DApp o $ nfDBn b
+  o          → DApp o $ nfDBn b
