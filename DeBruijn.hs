@@ -83,34 +83,36 @@ dBnToLambda t = let possible n = renameBackChars n : possible (n + 1) in
 
 -- Substitution
 
--- Term, depth, increment value
-incrementFree :: DBn → Int → Int → DBn
-incrementFree o@(DVar t) d n = if t > d then DVar (t + n) else o
-incrementFree (DApp a b) d n = DApp (incrementFree a d n) (incrementFree b d n)
-incrementFree (DAbs a)   d n = DAbs (incrementFree a (d + 1) n)
+-- Term, depth
+changeFree :: Int → (Int → Int) → DBn → DBn
+changeFree d f o@(DVar t) = if t > d then DVar (f t) else o
+changeFree d f (DApp a b) = DApp (changeFree d f a) (changeFree d f b)
+changeFree d f (DAbs a)   = DAbs $ changeFree (d + 1) f a
 
--- into what, what, depth
-substituteDBn :: DBn → DBn → Int → DBn
-substituteDBn o@(DVar t) w d
-  | t == d    = w
-  | otherwise = o
-substituteDBn (DApp a b) w d = DApp (substituteDBn a w d) (substituteDBn b w d)
-substituteDBn (DAbs a) w d   = DAbs $ substituteDBn a w $ d + 1
+incrementFree :: DBn → DBn
+incrementFree = changeFree 1 (+1)
 
--- term, depth
-maxFreeDepth :: DBn → Int → Int
-maxFreeDepth (DVar t)   d = max d t
-maxFreeDepth (DApp a b) d = max (maxFreeDepth a d) (maxFreeDepth b d)
-maxFreeDepth (DAbs a)   d = maxFreeDepth a (d + 1)
+decrementFree :: DBn → DBn
+decrementFree = changeFree 1 (\x → x - 1)
+
+-- into what, what, depth (substituting when var == depth)
+substituteDBn' :: DBn → DBn → Int → DBn
+substituteDBn' (DVar t) w d | d == t = w
+substituteDBn' o@(DVar t) _ _        = o
+substituteDBn' (DApp a b) w d        = DApp (substituteDBn' a w d) (substituteDBn' b w d)
+substituteDBn' (DAbs a) w d          = DAbs $ substituteDBn' a (incrementFree w) (d + 1)
+
+substituteDBn :: DBn → DBn → DBn
+substituteDBn a b = substituteDBn' a b 1
 
 reduceDBn :: DBn → DBn
-reduceDBn t = reduceDBn' 0 (maxFreeDepth t 0) t
+reduceDBn (DApp (DAbs a) b) = substituteDBn (decrementFree a) b
+reduceDBn t                 = t
 
--- Current depth, maximum int of free vars in outer term, term
-reduceDBn' :: Int → Int → DBn → DBn
-reduceDBn' d n (DApp (DAbs a) b) = let reduced = substituteDBn a (incrementFree b 0 n) 1 in
-                                    --reduceDBn' d (n + maxFreeDepth reduced 0) reduced
-                                    reduced
-reduceDBn' d n (DApp a b)        = DApp (reduceDBn' d n a) (reduceDBn' d n b)
-reduceDBn' d n (DAbs a)          = DAbs (reduceDBn' (d + 1) n a)
-reduceDBn' _ _ o@(DVar _)        = o
+nf :: DBn → DBn
+nf o@(DVar _)          = o
+nf (DAbs a)            = DAbs $ nf a
+nf (DApp (DAbs a) b)   = nf $ reduceDBn $ DApp (DAbs $ nf a) $ nf b
+nf (DApp a b)          = case nf a of
+  o@(DAbs _) → reduceDBn $ DApp o $ nf b
+  o          → DApp o $ nf b
