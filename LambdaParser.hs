@@ -5,22 +5,27 @@ import Text.ParserCombinators.Parsec
 import LambdaCalculus
 import Control.Applicative((<*>), (<$>))
 
+-- anyOf must be here
+dividers :: Parser ()
+dividers = spaces <|> ((many $ char '\n') >> return ())
+
 parseTerm :: Parser Lambda
-parseTerm = application <|> parseUnit
+parseTerm = lexem $ application <|> parseUnit
 
 parseUnit :: Parser Lambda
 parseUnit = (Var <$> variable) <|> abstraction <|> brackets parseTerm
 
 lexem :: Parser a → Parser a
 lexem p = do
+  optional dividers
   x ← p
-  optional spaces
+  optional dividers
   return x
 
 application :: Parser Lambda
 application = try $ do
   a ← parseUnit
-  b ← many1 (try $ space >> parseUnit)
+  b ← many1 (try $ dividers >> parseUnit)
   return $ foldl1 App (a : b)
 
 abstraction :: Parser Lambda
@@ -42,7 +47,7 @@ atomic :: Parser Lambda
 atomic = brackets parseTerm <|> (Var <$> variable)
 
 variable :: Parser String
-variable = (:) <$> (try lower) <*> (many digit)
+variable = (++) <$> ((:) <$> (try lower) <*> (many digit)) <*> (many $ char '\'')
 
 parseLine :: Parser Lambda
 parseLine = do
