@@ -3,7 +3,7 @@ module Utils where
 
 import System.IO
 import System.Environment
-import LambdaParser
+import Parser
 import LambdaCalculus
 
 processIO :: (Handle → Handle → IO()) → IO()

@@ -4,7 +4,7 @@ module Main where
 
 import System.IO
 import LambdaCalculus
-import LambdaParser(parseLambda)
+import Parser(parseLambda)
 import Utils
 
 main :: IO ()

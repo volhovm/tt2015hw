@@ -6,7 +6,7 @@ import System.IO
 import LambdaCalculus
 import Data.Set (elems)
 import Data.List (intersperse)
-import LambdaParser(parseLambda)
+import Parser(parseLambda)
 import Utils
 
 main :: IO ()

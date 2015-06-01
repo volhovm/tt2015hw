@@ -1,5 +1,5 @@
 {-# LANGUAGE UnicodeSyntax #-}
-module LambdaParser where
+module Parser where
 
 import Text.ParserCombinators.Parsec
 import LambdaCalculus

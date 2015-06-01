@@ -5,7 +5,7 @@ module Main where
 import System.IO
 import Utils
 import LambdaCalculus
-import LambdaParser
+import Parser(parseLambda)
 import Conversions
 import DeBruijn
 
