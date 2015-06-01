@@ -3,6 +3,7 @@ module Parser where
 
 import Text.ParserCombinators.Parsec
 import LambdaCalculus
+import TermUnification
 import Control.Applicative((<*>), (<$>))
 
 ----- Global
@@ -74,6 +75,21 @@ tfunc = varGen $ oneOf "abcdefgh"
 tvar :: Parser String
 tvar = varGen $ oneOf "ijklmnopqrstuvwxyz"
 
+parseTVar :: Parser Term
+parseTVar = lexem $ TVar <$> try tvar
+
+parseTFunc :: Parser Term
+parseTFunc = lexem $ do
+  name ← try tfunc
+  args ← brackets $ many1 $ parseTVar <|> parseTFunc
+  return $ TFunc name args
+
+parseTEquation :: Parser TermEq
+parseTEquation = let trm = parseTVar <|> parseTFunc in
+                  do f ← trm
+                     char '='
+                     s ← trm
+                     return $ TEquation f s
 
 ----- Miscellaneous
 
