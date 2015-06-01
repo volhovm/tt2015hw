@@ -6,6 +6,11 @@ import System.IO
 import Utils
 import LambdaCalculus
 import LambdaParser
+import Conversions
+import DeBruijn
+
+nf :: Lambda → Lambda
+nf = dBnToLambda . nfDBn . lambdaToDBn
 
 main :: IO ()
 main = processIO $ \input output → do

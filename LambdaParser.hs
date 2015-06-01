@@ -5,15 +5,11 @@ import Text.ParserCombinators.Parsec
 import LambdaCalculus
 import Control.Applicative((<*>), (<$>))
 
+----- Global
+
 -- anyOf must be here
 dividers :: Parser ()
 dividers = spaces <|> ((many $ char '\n') >> return ())
-
-parseTerm :: Parser Lambda
-parseTerm = lexem $ application <|> parseUnit
-
-parseUnit :: Parser Lambda
-parseUnit = (Var <$> variable) <|> abstraction <|> brackets parseTerm
 
 lexem :: Parser a → Parser a
 lexem p = do
@@ -21,6 +17,34 @@ lexem p = do
   x ← p
   optional dividers
   return x
+
+brackets :: Parser a → Parser a
+brackets s = do
+  try $ char '('
+  a ← s
+  char ')'
+  return a
+
+varGen :: Parser Char → Parser String
+varGen t = ((:) <$> (try t) <*> (many (digit <|> char '\'' <|> lower)))
+
+variable :: Parser String
+variable = varGen lower
+
+line :: Parser a -> Parser a
+line s = do
+  t ← s
+  spaces
+  optional newline
+  return t
+
+----- Lambdas
+
+parseTerm :: Parser Lambda
+parseTerm = lexem $ application <|> parseUnit
+
+parseUnit :: Parser Lambda
+parseUnit = (Var <$> variable) <|> abstraction <|> brackets parseTerm
 
 application :: Parser Lambda
 application = try $ do
@@ -36,28 +60,22 @@ abstraction = do
   a ← parseTerm
   return $ Abs v a
 
-brackets :: Parser a → Parser a
-brackets s = do
-  try $ char '('
-  a ← s
-  char ')'
-  return a
-
 atomic :: Parser Lambda
 atomic = brackets parseTerm <|> (Var <$> variable)
 
-variable :: Parser String
-variable = (++) <$> ((:) <$> (try lower) <*> (many digit)) <*> (many $ char '\'')
-
-parseLine :: Parser Lambda
-parseLine = do
-  t ← parseTerm
-  spaces
-  optional $ char '\n'
-  return t
-
 parseLambda :: String → Either ParseError Lambda
-parseLambda = parse parseLine "Lambda parsing failed"
+parseLambda = parse (line parseTerm) "Lambda parsing failed"
+
+----- Terms unification
+
+tfunc :: Parser String
+tfunc = varGen $ oneOf "abcdefgh"
+
+tvar :: Parser String
+tvar = varGen $ oneOf "ijklmnopqrstuvwxyz"
+
+
+----- Miscellaneous
 
 parseSubstitution :: String → Either ParseError (Lambda, Literal, Lambda)
 parseSubstitution = parse (do t ← parseTerm
