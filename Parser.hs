@@ -81,15 +81,18 @@ parseTVar = lexem $ TVar <$> try tvar
 parseTFunc :: Parser Term
 parseTFunc = lexem $ do
   name ← try tfunc
-  args ← brackets $ many1 $ parseTVar <|> parseTFunc
+  args ← brackets $ sepBy1 (parseTVar <|> parseTFunc) $ lexem $ char ','
   return $ TFunc name args
 
-parseTEquation :: Parser TermEq
-parseTEquation = let trm = parseTVar <|> parseTFunc in
+parseTEq :: Parser TermEq
+parseTEq = let trm = parseTVar <|> parseTFunc in
                   do f ← trm
                      char '='
                      s ← trm
-                     return $ TEquation f s
+                     return $ TermEq f s
+
+parseTermEqual :: String → Either ParseError TermEq
+parseTermEqual = parse parseTEq "failed to parse equal terms"
 
 ----- Miscellaneous
 
@@ -100,3 +103,5 @@ parseSubstitution = parse (do t ← parseTerm
                               string ":="
                               s ← parseTerm
                               return $ (t, v, s)) "mda"
+
+hole = hole

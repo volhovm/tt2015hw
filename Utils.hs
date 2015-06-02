@@ -4,6 +4,7 @@ module Utils where
 import System.IO
 import System.Environment
 import Parser
+import TermUnification
 import LambdaCalculus
 
 processIO :: (Handle → Handle → IO()) → IO()
@@ -17,5 +18,10 @@ processIO handling = do
 
 pl :: String → Lambda
 pl s = case parseLambda s of
-  Left _ → pl "e"
+  Left _ → undefined
+  Right l → l
+
+pte :: String → TermEq
+pte s = case parseTermEqual s of
+  Left _ → undefined
   Right l → l
