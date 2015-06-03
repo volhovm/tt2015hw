@@ -30,7 +30,7 @@ containsT a o@(TVar _)    = a == o
 containsT a o@(TFunc _ l) = a == o || any (containsT a) l
 
 containsTE :: Term → TermEq → Bool
-containsTE a (TermEq b c) = containsT a b && containsT a c
+containsTE a (TermEq b c) = containsT a b || containsT a c
 
 -- substitution a b c, change all a to b in c
 substituteT :: Term → Term → Term → Term
@@ -47,8 +47,8 @@ swap (TermEq a@(TFunc _ _) b@(TVar _)) = TermEq b a
 swap a                                 = a
 
 samevar :: TermEq → Bool
-samevar (TermEq (TVar a) (TVar b)) | a == b = True
-samevar _                                   = False
+samevar (TermEq (TVar a) (TVar b)) = a == b
+samevar _                          = False
 
 cmpFunc :: (String → String → Bool) → TermEq → Bool
 cmpFunc op (TermEq (TFunc a _) (TFunc b _)) = op a b
@@ -58,9 +58,6 @@ cmpFunc _ _                                 = False
 replFst :: (Eq a) ⇒ (a → Bool) → (a → [a]) → [a] → Maybe [a]
 replFst prd change list = let found = find prd list in
                                 liftM2 (++) (change <$> found) (liftM2 delete found $ Just list)
-
-replFst1 :: (Eq a) ⇒ (a → Bool) → (a → a) → [a] → Maybe [a]
-replFst1 prd change = replFst prd (\x → [change x])
 
 termRed :: TermEq → [TermEq]
 termRed (TermEq (TFunc _ l1) (TFunc _ l2)) = zipWith TermEq l1 l2
@@ -75,13 +72,16 @@ varSmth _                     = False
 
 -- An Efficient Unification Algorithm (Martelli and Montanari)
 unify :: [TermEq] → Maybe [TermEq]
-unify list | any (\x → (/=) (swap x) x) list = unify =<< replFst1 (\x → (/=) (swap x) x) swap list
+unify list | any (\x → (swap x) /= x) list   = unify $ map swap list
 unify list | any samevar list                = unify $ filter (not . samevar) list
 unify list | any (cmpFunc (/=)) list         = Nothing
 unify list | any (cmpFunc (==)) list         = unify =<< replFst (cmpFunc (==)) termRed list
-unify list | any (uniqCond list) list     =
+unify list | any (uniqCond list) list        = unify =<<
                let x@(TermEq a@(TVar _) b) = fromJust $ find (uniqCond list) list in
                  if containsT a b
                  then Nothing
-                 else Just $ map (substituteTE a b) (delete x list)
+                 else Just $ x : map (substituteTE a b) (delete x list)
 unify list                                   = Just list
+
+unifyS :: [TermEq] → [TermEq]
+unifyS = fromJust . unify
