@@ -9,22 +9,11 @@ import Control.Applicative((<*>), (<$>))
 ----- Global
 
 -- anyOf must be here
-dividers :: Parser ()
-dividers = spaces <|> ((many $ char '\n') >> return ())
-
 lexem :: Parser a → Parser a
-lexem p = do
-  optional dividers
-  x ← p
-  optional dividers
-  return x
+lexem = (>>) spaces
 
 brackets :: Parser a → Parser a
-brackets s = do
-  try $ char '('
-  a ← s
-  char ')'
-  return a
+brackets = between (char '(') (char ')')
 
 varGen :: Parser Char → Parser String
 varGen t = ((:) <$> (try t) <*> (many (digit <|> char '\'' <|> lower)))
@@ -50,7 +39,7 @@ parseUnit = (Var <$> variable) <|> abstraction <|> brackets parseTerm
 application :: Parser Lambda
 application = try $ do
   a ← parseUnit
-  b ← many1 (try $ dividers >> parseUnit)
+  b ← many1 (try $ spaces >> parseUnit)
   return $ foldl1 App (a : b)
 
 abstraction :: Parser Lambda
@@ -65,7 +54,7 @@ atomic :: Parser Lambda
 atomic = brackets parseTerm <|> (Var <$> variable)
 
 parseLambda :: String → Either ParseError Lambda
-parseLambda = parse (line parseTerm) "Lambda parsing failed"
+parseLambda = parse (head <$> sepBy1 parseTerm newline) "Lambda parsing failed"
 
 ----- Terms unification
 
@@ -81,18 +70,23 @@ parseTVar = lexem $ TVar <$> try tvar
 parseTFunc :: Parser Term
 parseTFunc = lexem $ do
   name ← try tfunc
-  args ← brackets $ sepBy1 (parseTVar <|> parseTFunc) $ lexem $ char ','
+  args ← brackets $ sepBy1 parseTTerm $ lexem $ char ','
   return $ TFunc name args
 
+parseTTerm :: Parser Term
+parseTTerm = try parseTFunc <|> try parseTVar
+
 parseTEq :: Parser TermEq
-parseTEq = let trm = parseTVar <|> parseTFunc in
-                  do f ← trm
-                     char '='
-                     s ← trm
-                     return $ TermEq f s
+parseTEq =  do f ← parseTTerm
+               spaces >> char '='
+               s ← parseTTerm
+               return $ TermEq f s
 
 parseTermEqual :: String → Either ParseError TermEq
 parseTermEqual = parse parseTEq "failed to parse equal terms"
+
+parseTermsEqual :: String → Either ParseError [TermEq]
+parseTermsEqual = parse (sepBy1 parseTEq $ char '\n') "failed to parse many equalTerms"
 
 ----- Miscellaneous
 
@@ -103,5 +97,3 @@ parseSubstitution = parse (do t ← parseTerm
                               string ":="
                               s ← parseTerm
                               return $ (t, v, s)) "mda"
-
-hole = hole

@@ -5,9 +5,11 @@ module TermUnification where
 import Control.Applicative
 import Control.Monad
 import Data.List
+import Data.Set (Set(..), fromList, singleton, unions, union, toList, difference)
 import Data.Maybe
 
 data Term = TFunc String [Term] | TVar String
+                                  deriving Ord
 instance Show Term where
   show (TVar s)       = s
   show (TFunc s list) = s ++ "(" ++ (unwords $ map show list) ++")"
@@ -18,6 +20,8 @@ instance Eq Term where
   (==) _ _                       = False
 
 data TermEq = TermEq Term Term
+              deriving Ord
+
 instance Show TermEq where
   show (TermEq a b) = show a ++ " = " ++ show b
 
@@ -85,3 +89,13 @@ unify list                                   = Just list
 
 unifyS :: [TermEq] → [TermEq]
 unifyS = fromJust . unify
+
+varsT :: Term → Set Term
+varsT (TFunc _ b) = unions $ map varsT b
+varsT a@(TVar _)  = singleton a
+
+-- Adds variables pairs of form a = a if they're not present directly as a = ...
+fillIDs :: [TermEq] → [TermEq]
+fillIDs l = let right = unions $ map (\(TermEq _ b) → (varsT b)) l in
+             let left = unions $ map (\(TermEq a _) → varsT a) l in
+              (map (\x -> TermEq x x) $ toList (difference right left)) ++ l
