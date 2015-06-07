@@ -64,28 +64,28 @@ tfunc = varGen $ oneOf "abcdefgh"
 tvar :: Parser String
 tvar = varGen $ oneOf "ijklmnopqrstuvwxyz"
 
-parseTVar :: Parser Term
+parseTVar :: Parser (Term String)
 parseTVar = lexem $ TVar <$> try tvar
 
-parseTFunc :: Parser Term
+parseTFunc :: Parser (Term String)
 parseTFunc = lexem $ do
   name ← try tfunc
   args ← brackets $ sepBy1 parseTTerm $ lexem $ char ','
   return $ TFunc name args
 
-parseTTerm :: Parser Term
+parseTTerm :: Parser (Term String)
 parseTTerm = try parseTFunc <|> try parseTVar
 
-parseTEq :: Parser TermEq
+parseTEq :: Parser (TermEq String)
 parseTEq =  do f ← parseTTerm
                spaces >> char '='
                s ← parseTTerm
                return $ TermEq f s
 
-parseTermEqual :: String → Either ParseError TermEq
+parseTermEqual :: String → Either ParseError (TermEq String)
 parseTermEqual = parse parseTEq "failed to parse equal terms"
 
-parseTermsEqual :: String → Either ParseError [TermEq]
+parseTermsEqual :: String → Either ParseError [TermEq String]
 parseTermsEqual = parse (sepBy1 parseTEq $ char '\n') "failed to parse many equalTerms"
 
 ----- Miscellaneous

@@ -28,3 +28,6 @@ lambdaToDBn' m d (Abs l a) = DAbs $ lambdaToDBn' (insert l d m) (d + 1) a
 
 lambdaToDBn :: Lambda → DBn
 lambdaToDBn = lambdaToDBn' empty 0
+
+nf :: Lambda → Lambda
+nf = dBnToLambda . nfDBn . lambdaToDBn

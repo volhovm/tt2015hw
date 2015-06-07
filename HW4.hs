@@ -9,9 +9,6 @@ import Parser(parseLambda)
 import Conversions
 import DeBruijn
 
-nf :: Lambda → Lambda
-nf = dBnToLambda . nfDBn . lambdaToDBn
-
 main :: IO ()
 main = processIO $ \input output → do
   s ← hGetContents input

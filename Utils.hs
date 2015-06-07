@@ -21,7 +21,7 @@ pl s = case parseLambda s of
   Left _ → undefined
   Right l → l
 
-pte :: String → TermEq
+pte :: String → TermEq String
 pte s = case parseTermEqual s of
   Left _ → undefined
   Right l → l

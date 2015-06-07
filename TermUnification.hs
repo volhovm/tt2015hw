@@ -1,60 +1,60 @@
-{-# LANGUAGE UnicodeSyntax, TupleSections #-}
+{-# LANGUAGE UnicodeSyntax, TupleSections, ExistentialQuantification,
+InstanceSigs, StandaloneDeriving, FlexibleContexts, UndecidableInstances #-}
 
 module TermUnification where
 
 import Control.Applicative
 import Control.Monad
 import Data.List
-import Data.Set (Set(..), fromList, singleton, unions, union, toList, difference)
 import Data.Maybe
 
-data Term = TFunc String [Term] | TVar String
-                                  deriving Ord
-instance Show Term where
-  show (TVar s)       = s
+data Term a = TFunc String [Term a]
+            | (Eq a, Show a) ⇒ TVar a
+
+instance Show (Term a) where
+  show (TVar s)       = show s
   show (TFunc s list) = s ++ "(" ++ (unwords $ map show list) ++")"
 
-instance Eq Term where
-  (==) (TVar a) (TVar b)         = a == b
-  (==) (TFunc a l1) (TFunc b l2) = a == b && all (\x -> fst x == snd x) (zip l1 l2)
+instance Eq (Term a) where
+  (==) (TVar a) (TVar b)         = (==) b a
+  (==) (TFunc a l1) (TFunc b l2) = a == b && all (\x → fst x == snd x) (zip l1 l2)
   (==) _ _                       = False
 
-data TermEq = TermEq Term Term
-              deriving Ord
+data TermEq a = TermEq (Term a) (Term a)
 
-instance Show TermEq where
+instance Show (TermEq a) where
   show (TermEq a b) = show a ++ " = " ++ show b
 
-instance Eq TermEq where
+instance Eq (TermEq a) where
   (==) (TermEq a b) (TermEq c d) = a == c && b == d
 
 -- what, where
-containsT :: Term → Term → Bool
+containsT :: (Term a) → (Term a) → Bool
 containsT a o@(TVar _)    = a == o
 containsT a o@(TFunc _ l) = a == o || any (containsT a) l
 
-containsTE :: Term → TermEq → Bool
+containsTE :: Term a → TermEq a → Bool
 containsTE a (TermEq b c) = containsT a b || containsT a c
 
 -- substitution a b c, change all a to b in c
-substituteT :: Term → Term → Term → Term
+substituteT :: Term a → Term a → Term a → Term a
 substituteT (TVar a) b (TVar c) | a == c = b
 substituteT a@(TVar _) b (TFunc n c)     = TFunc n $ map (substituteT a b) c
 substituteT (TVar _) _ c                 = c
 -- can't substitute functions
 
-substituteTE :: Term → Term → TermEq → TermEq
+substituteTE :: Term a → Term a → TermEq a → TermEq a
 substituteTE a b (TermEq c d) = TermEq (substituteT a b c) (substituteT a b d)
 
-swap :: TermEq → TermEq
+swap :: TermEq a → TermEq a
 swap (TermEq a@(TFunc _ _) b@(TVar _)) = TermEq b a
 swap a                                 = a
 
-samevar :: TermEq → Bool
+samevar :: TermEq a → Bool
 samevar (TermEq (TVar a) (TVar b)) = a == b
 samevar _                          = False
 
-cmpFunc :: (String → String → Bool) → TermEq → Bool
+cmpFunc :: (String → String → Bool) → TermEq a → Bool
 cmpFunc op (TermEq (TFunc a _) (TFunc b _)) = op a b
 cmpFunc _ _                                 = False
 
@@ -63,19 +63,19 @@ replFst :: (Eq a) ⇒ (a → Bool) → (a → [a]) → [a] → Maybe [a]
 replFst prd change list = let found = find prd list in
                                 liftM2 (++) (change <$> found) (liftM2 delete found $ Just list)
 
-termRed :: TermEq → [TermEq]
+termRed :: TermEq a → [TermEq a]
 termRed (TermEq (TFunc _ l1) (TFunc _ l2)) = zipWith TermEq l1 l2
 
-uniqCond :: [TermEq] → TermEq → Bool
+uniqCond :: [TermEq a] → TermEq a → Bool
 uniqCond list t@(TermEq a@(TVar _) b) = b /= a && any (containsTE a) (delete t list)
 uniqCond _ _                        = False
 
-varSmth :: TermEq → Bool
+varSmth :: TermEq a → Bool
 varSmth (TermEq a@(TVar _) b) = a /= b
 varSmth _                     = False
 
 -- An Efficient Unification Algorithm (Martelli and Montanari)
-unify :: [TermEq] → Maybe [TermEq]
+unify :: [TermEq a] → Maybe [TermEq a]
 unify list | any (\x → (swap x) /= x) list   = unify $ map swap list
 unify list | any samevar list                = unify $ filter (not . samevar) list
 unify list | any (cmpFunc (/=)) list         = Nothing
@@ -87,15 +87,15 @@ unify list | any (uniqCond list) list        = unify =<<
                  else Just $ x : map (substituteTE a b) (delete x list)
 unify list                                   = Just list
 
-unifyS :: [TermEq] → [TermEq]
+unifyS :: [TermEq a] → [TermEq a]
 unifyS = fromJust . unify
 
-varsT :: Term → Set Term
-varsT (TFunc _ b) = unions $ map varsT b
-varsT a@(TVar _)  = singleton a
+varsT :: Term a → [Term a]
+varsT (TFunc _ b) = nub $ concatMap varsT b
+varsT a@(TVar _)  = [a]
 
 -- Adds variables pairs of form a = a if they're not present directly as a = ...
-fillIDs :: [TermEq] → [TermEq]
-fillIDs l = let right = unions $ map (\(TermEq _ b) → (varsT b)) l in
-             let left = unions $ map (\(TermEq a _) → varsT a) l in
-              (map (\x -> TermEq x x) $ toList (difference right left)) ++ l
+fillIDs :: [TermEq a] → [TermEq a]
+fillIDs l = let right = nub $ concatMap (\(TermEq _ b) → (varsT b)) l in
+             let left = nub $ concatMap (\(TermEq a _) → varsT a) l in
+              (map (\x -> TermEq x x) $ (right \\ left)) ++ l
