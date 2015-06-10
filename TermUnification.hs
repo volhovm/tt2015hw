@@ -5,6 +5,7 @@ module TermUnification where
 
 import Control.Applicative
 import Control.Monad
+import Debug.Trace
 import Data.List
 import Data.Maybe
 
@@ -99,3 +100,15 @@ fillIDs :: [TermEq a] → [TermEq a]
 fillIDs l = let right = nub $ concatMap (\(TermEq _ b) → (varsT b)) l in
              let left = nub $ concatMap (\(TermEq a _) → varsT a) l in
               (map (\x -> TermEq x x) $ (right \\ left)) ++ l
+
+-- swaps all variable pairs for least to be first
+swapByName :: (Ord a) ⇒ [TermEq a] → [TermEq a]
+swapByName l = let swp (TermEq x@(TVar a) y@(TVar b)) | a > b = TermEq y x
+                   swp a                                      = a
+                                                           in
+                map swp l
+
+-- finds TVar on the left in list and returns corresponding right term
+findAns :: a → Maybe [TermEq a] → Maybe (Term a)
+findAns f eq = do (TermEq _ b) ← (find (\(TermEq (TVar t) _) → t == f)) =<< eq
+                  return b

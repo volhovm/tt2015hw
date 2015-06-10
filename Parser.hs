@@ -4,7 +4,7 @@ module Parser where
 import Text.ParserCombinators.Parsec
 import LambdaCalculus
 import TermUnification
-import Control.Applicative((<*>), (<$>))
+import Control.Applicative((<*>), (<$>), (<*))
 
 ----- Global
 
@@ -54,7 +54,7 @@ atomic :: Parser Lambda
 atomic = brackets parseTerm <|> (Var <$> variable)
 
 parseLambda :: String → Either ParseError Lambda
-parseLambda = parse (head <$> sepBy1 parseTerm newline) "Lambda parsing failed"
+parseLambda = parse (parseTerm <* (spaces >> eof)) "Lambda parsing failed"
 
 ----- Terms unification
 
@@ -86,7 +86,7 @@ parseTermEqual :: String → Either ParseError (TermEq String)
 parseTermEqual = parse parseTEq "failed to parse equal terms"
 
 parseTermsEqual :: String → Either ParseError [TermEq String]
-parseTermsEqual = parse (sepBy1 parseTEq $ char '\n') "failed to parse many equalTerms"
+parseTermsEqual = parse (sepBy1 parseTEq $ newline) "failed to parse many equalTerms"
 
 ----- Miscellaneous
 
