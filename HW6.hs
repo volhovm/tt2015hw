@@ -1,17 +1,11 @@
 {-# LANGUAGE UnicodeSyntax #-}
-
 module Main where
 
 import System.IO
 import Utils
 import Parser
-import TermUnification
 import TypeInference
 import Control.Applicative
-import Conversions
-
-test :: (a → b) → a → b
-test x y = x y
 
 main :: IO()
 main = processIO $ \input output → do

@@ -8,7 +8,6 @@ import Control.Applicative((<*>), (<$>), (<*))
 
 ----- Global
 
--- anyOf must be here
 lexem :: Parser a → Parser a
 lexem = (>>) spaces
 

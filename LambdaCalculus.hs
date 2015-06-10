@@ -1,5 +1,4 @@
 {-# LANGUAGE UnicodeSyntax, FlexibleInstances #-}
-
 module LambdaCalculus where
 
 import Data.Set
@@ -25,13 +24,14 @@ outputView (Abs s l) = brck $ '\\' : (s ++ "." ++ outputView l)
 brck :: String → String
 brck s = "(" ++ s ++ ")"
 
+-- returns set of free variables in lambda
+freeVars :: Lambda → Set Literal
+freeVars l = freeVars' l empty
+
 freeVars' :: Lambda → Set Literal → Set Literal
 freeVars' (App a b) ignored = (freeVars' a ignored) `union` (freeVars' b ignored)
 freeVars' (Abs s l) ignored = freeVars' l $ insert s ignored
 freeVars' (Var s) ignored   = if member s ignored then empty else singleton s
-
-freeVars :: Lambda → Set Literal
-freeVars l = freeVars' l empty
 
 -- into, instead of what, what
 substitute :: Lambda → Literal → Lambda → Either Literal Lambda

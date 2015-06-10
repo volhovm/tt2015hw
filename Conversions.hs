@@ -1,5 +1,4 @@
 {-# LANGUAGE UnicodeSyntax, FlexibleInstances #-}
-
 module Conversions where
 
 import LambdaCalculus

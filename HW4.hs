@@ -1,5 +1,4 @@
 {-# LANGUAGE UnicodeSyntax #-}
-
 module Main where
 
 import System.IO
@@ -7,7 +6,6 @@ import Utils
 import LambdaCalculus
 import Parser(parseLambda)
 import Conversions
-import DeBruijn
 
 main :: IO ()
 main = processIO $ \input output → do

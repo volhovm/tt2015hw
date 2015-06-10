@@ -1,11 +1,9 @@
-{-# LANGUAGE UnicodeSyntax, TupleSections, ExistentialQuantification,
-InstanceSigs, StandaloneDeriving, FlexibleContexts, UndecidableInstances #-}
-
+{-# LANGUAGE UnicodeSyntax, ExistentialQuantification
+ #-}
 module TermUnification where
 
 import Control.Applicative
 import Control.Monad
-import Debug.Trace
 import Data.List
 import Data.Maybe
 

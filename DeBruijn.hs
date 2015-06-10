@@ -1,8 +1,6 @@
 {-# LANGUAGE UnicodeSyntax, FlexibleInstances #-}
-
 module DeBruijn where
 
-import Data.Map
 import Data.Char
 
 data DBn = DVar Int | DApp DBn DBn | DAbs DBn
@@ -11,18 +9,13 @@ instance Show DBn where
   show (DApp a b) = show a ++ " " ++ show b
   show (DAbs c) = "λ(" ++ show c ++ ")"
 
+-- counts maximum depth of structure
 depth :: DBn → Int
 depth (DVar _) = 1
 depth (DApp a b) = max (depth a) $ depth b
 depth (DAbs a) = (depth a) + 1
 
--- Conversions
-
---  Map [Lambda depth → current depth, current naming, (M (depth → var), DBn)
---dBnToLambda' :: Int → DBn → LambdaG Int
---dBnToLambda' d (DVar t) = if t > d then Var t else Var $ d - t
---dBnToLambda' d (DApp a b) = App (dBnToLambda' d a) (dBnToLambda' d b)
---dBnToLambda' d (DAbs a) = Abs d (dBnToLambda' (d + 1) a)
+-- Conversions from strings to ints
 
 mapf :: Char → Int
 mapf i | ord i >= 97 && ord i <= 122 = ord i - 97
@@ -49,6 +42,8 @@ rename :: String → Int
 rename (x:[]) = mapf x
 rename (x:xs) = mapf x + 37 * rename xs
 
+
+-- finds all "real free varaibles numbers", that can be converted into literals
 freeDBn :: DBn → [Int]
 freeDBn = freeDBn' 0
 
@@ -56,8 +51,6 @@ freeDBn' :: Int → DBn → [Int]
 freeDBn' d (DVar t)   = if t > d then [t - d] else []
 freeDBn' d (DApp a b) = freeDBn' d a ++ freeDBn' d b
 freeDBn' d (DAbs a)   = freeDBn' (d + 1) a
-
-
 
 -- Term, depth
 changeFree :: Int → (Int → Int) → DBn → DBn
@@ -85,6 +78,7 @@ reduceDBn :: DBn → DBn
 reduceDBn (DApp (DAbs a) b) = substituteDBn (decrementFree a) b
 reduceDBn t                 = t
 
+-- Makes normal form out of lambda in DBn notation
 nfDBn :: DBn → DBn
 nfDBn o@(DVar _)          = o
 nfDBn (DAbs a)            = DAbs $ nfDBn a

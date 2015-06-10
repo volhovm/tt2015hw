@@ -16,11 +16,13 @@ processIO handling = do
   hClose input
   hClose output
 
+-- simply parses lambda
 pl :: String → Lambda
 pl s = case parseLambda s of
   Left _ → undefined
   Right l → l
 
+-- simply parses term equation
 pte :: String → TermEq String
 pte s = case parseTermEqual s of
   Left _ → undefined
