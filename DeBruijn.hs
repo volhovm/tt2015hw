@@ -2,6 +2,7 @@
 module DeBruijn where
 
 import Data.Char
+import Debug.Trace
 
 data DBn = DVar Int | DApp DBn DBn | DAbs DBn
 instance Show DBn where
@@ -58,16 +59,19 @@ changeFree d f o@(DVar t) = if t > d then DVar (f t) else o
 changeFree d f (DApp a b) = DApp (changeFree d f a) (changeFree d f b)
 changeFree d f (DAbs a)   = DAbs $ changeFree (d + 1) f a
 
+-- DO NOT TOUCH
+-- ALL +-1 shifts are carefully debugged!
 incrementFree :: DBn → DBn
-incrementFree = changeFree 1 (+1)
+incrementFree = changeFree 0 (+1)
 
 decrementFree :: DBn → DBn
-decrementFree = changeFree 1 (\x → x - 1)
+decrementFree = changeFree 0 (\x → x - 1)
+
 
 -- into what, what, depth (substituting when var == depth)
 substituteDBn' :: DBn → DBn → Int → DBn
 substituteDBn' (DVar t) w d | d == t = w
-substituteDBn' o@(DVar t) _ _        = o
+substituteDBn' o@(DVar _) _ _        = o
 substituteDBn' (DApp a b) w d        = DApp (substituteDBn' a w d) (substituteDBn' b w d)
 substituteDBn' (DAbs a) w d          = DAbs $ substituteDBn' a (incrementFree w) (d + 1)
 
@@ -75,14 +79,17 @@ substituteDBn :: DBn → DBn → DBn
 substituteDBn a b = substituteDBn' a b 1
 
 reduceDBn :: DBn → DBn
-reduceDBn (DApp (DAbs a) b) = substituteDBn (decrementFree a) b
-reduceDBn t                 = t
+reduceDBn (DApp o@(DAbs _) b) = let (DAbs a) = decrementFree o in
+                                 substituteDBn a b
+reduceDBn t                   = t
 
 -- Makes normal form out of lambda in DBn notation
+-- normal reduction order
 nfDBn :: DBn → DBn
 nfDBn o@(DVar _)          = o
 nfDBn (DAbs a)            = DAbs $ nfDBn a
-nfDBn (DApp (DAbs a) b)   = nfDBn $ reduceDBn $ DApp (DAbs $ nfDBn a) $ nfDBn b
+nfDBn (DApp (DAbs a) b)   = let nfa = nfDBn a in
+                             nfDBn $ reduceDBn $ DApp (DAbs nfa) $ nfDBn b
 nfDBn (DApp a b)          = case nfDBn a of
   o@(DAbs _) → reduceDBn $ DApp o $ nfDBn b
   o          → DApp o $ nfDBn b

@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, FlexibleInstances #-}
+{-# LANGUAGE UnicodeSyntax, FlexibleInstances, StandaloneDeriving #-}
 module LambdaCalculus where
 
 import Data.Set
@@ -6,9 +6,12 @@ import Data.Set
 type Literal = String
 data LambdaG a = App (LambdaG a) (LambdaG a) | Abs a (LambdaG a) | Var a
 type Lambda = LambdaG Literal
+deriving instance Eq Lambda
 instance Show Lambda where
+  show (App a b@(App _ _)) = show a ++ " (" ++ show b ++ ")"
+--  show (App a@(Abs _ _) b) = "(" ++ show a ++ ") " ++ show b
   show (App a b) = show a ++ " " ++ show b
-  show (Abs s l) = "λ" ++ s ++ ".(" ++ show l ++ ")"
+  show (Abs s l) = "(λ" ++ s ++ "." ++ show l ++ ")"
   show (Var l) = l
 instance Show (LambdaG Int) where
   show (App a b) = show a ++ " " ++ show b
