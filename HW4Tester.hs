@@ -11,12 +11,17 @@ main :: IO ()
 main = undefined
 
 cf, cx :: String
-cf = "a"
-cx = "b"
+cf = "b"
+cx = "a"
 
 vcx, vcf :: Lambda
 vcx = Var cx
 vcf = Var cf
+
+(===) :: Lambda → Lambda → Bool
+(===) a b = (lambdaToDBn a) == (lambdaToDBn b)
+
+test4 = testInc ++ testAdd ++ testMul ++ testPow ++ testFact
 
 churchn :: Int → Lambda
 churchn n = if (n < 0) then churchn 0
@@ -33,19 +38,19 @@ test :: (Int → Bool) → Int → Int → [Int]
 test foo num from = filter (not . foo) $ take num $ iterate (+1) from
 
 testInc :: [Int]
-testInc = test (\x → (nf $ inc (churchn x)) == (churchn $ x + 1)) 1000 0
+testInc = test (\x → (nf $ inc (churchn x)) === (churchn $ x + 1)) 200 0
 
 add :: Lambda → Lambda → Lambda
 add a b = Abs cf $ Abs cx $ App (App a $ vcf) (App (App b $ vcf) $ vcx)
 
 testAdd :: [Int]
-testAdd = test (\x → (nf $ add (churchn x) $ churchn $ x + 2) == (churchn $ x + x + 2)) 200 0
+testAdd = test (\x → (nf $ add (churchn x) $ churchn $ x + 2) === (churchn $ x + x + 2)) 100 0
 
 mul :: Lambda → Lambda → Lambda
 mul a b = Abs cf $ Abs cx $ App (App a (App b $ vcf)) $ vcx
 
 testMul :: [Int]
-testMul = test (\x → (nf $ mul (churchn x) $ churchn $ x * x + 2) ==
+testMul = test (\x → (nf $ mul (churchn x) $ churchn $ x * x + 2) ===
                      (churchn $ x * (x * x + 2))) 20 0
 
 pow :: Lambda → Lambda → Lambda
@@ -55,9 +60,10 @@ pow a b = nf $ App b a
 n *** m = (iterate (n*) $ 1) !! m
 
 testPow :: [Int]
-testPow = test (\x → trace (show x ++ " ^ " ++ show (x+2)) $
-                     (nf $ pow (churchn x) (churchn $ x + 2)) ==
-                     (churchn $ x *** (x + 2))) 7 0
+testPow = test (\x →
+                 --trace (show x ++ " ^ " ++ show (x+2)) $
+                     (nf $ pow (churchn x) (churchn $ x + 2)) ===
+                     (churchn $ x *** (x + 2))) 5 0
 
 cY, cI :: Lambda
 cY = Abs cf (App (Abs cx (App (App vcf vcx) vcx)) (Abs cx (App (App vcf vcx) vcx)))
@@ -87,4 +93,4 @@ fact n = mul (churchn n) $ fact (n-1)
 (!!!) i = i * (!!!) (i-1)
 
 testFact :: [Int]
-testFact = test (\x → (nf $ fact x) == (churchn $ (!!!) x)) 10 0
+testFact = test (\x → (nf $ fact x) === (churchn $ (!!!) x)) 8 0

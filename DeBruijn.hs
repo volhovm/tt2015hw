@@ -1,10 +1,10 @@
-{-# LANGUAGE UnicodeSyntax, FlexibleInstances #-}
+{-# LANGUAGE UnicodeSyntax, FlexibleInstances, BangPatterns #-}
 module DeBruijn where
 
 import Data.Char
-import Debug.Trace
 
 data DBn = DVar Int | DApp DBn DBn | DAbs DBn
+         deriving Eq
 instance Show DBn where
   show (DVar i) = show i
   show (DApp a b) = show a ++ " " ++ show b
@@ -59,14 +59,11 @@ changeFree d f o@(DVar t) = if t > d then DVar (f t) else o
 changeFree d f (DApp a b) = DApp (changeFree d f a) (changeFree d f b)
 changeFree d f (DAbs a)   = DAbs $ changeFree (d + 1) f a
 
--- DO NOT TOUCH
--- ALL +-1 shifts are carefully debugged!
 incrementFree :: DBn → DBn
 incrementFree = changeFree 0 (+1)
 
 decrementFree :: DBn → DBn
 decrementFree = changeFree 0 (\x → x - 1)
-
 
 -- into what, what, depth (substituting when var == depth)
 substituteDBn' :: DBn → DBn → Int → DBn
@@ -76,11 +73,12 @@ substituteDBn' (DApp a b) w d        = DApp (substituteDBn' a w d) (substituteDB
 substituteDBn' (DAbs a) w d          = DAbs $ substituteDBn' a (incrementFree w) (d + 1)
 
 substituteDBn :: DBn → DBn → DBn
-substituteDBn a b = substituteDBn' a b 1
+substituteDBn a b = substituteDBn' a b 0
 
 reduceDBn :: DBn → DBn
-reduceDBn (DApp o@(DAbs _) b) = let (DAbs a) = decrementFree o in
-                                 substituteDBn a b
+reduceDBn (DApp o@(DAbs _) b) = let (DAbs ans) = substituteDBn o b in
+                                 let fans = decrementFree ans in
+                                  fans
 reduceDBn t                   = t
 
 -- Makes normal form out of lambda in DBn notation
@@ -88,8 +86,7 @@ reduceDBn t                   = t
 nfDBn :: DBn → DBn
 nfDBn o@(DVar _)          = o
 nfDBn (DAbs a)            = DAbs $ nfDBn a
-nfDBn (DApp (DAbs a) b)   = let nfa = nfDBn a in
-                             nfDBn $ reduceDBn $ DApp (DAbs nfa) $ nfDBn b
-nfDBn (DApp a b)          = case nfDBn a of
-  o@(DAbs _) → reduceDBn $ DApp o $ nfDBn b
+nfDBn o@(DApp (DAbs _) _) = nfDBn $ reduceDBn $ o
+nfDBn (DApp a b)          = case nfDBn $ a of
+  o@(DAbs _) → nfDBn $ reduceDBn $ DApp o b
   o          → DApp o $ nfDBn b
