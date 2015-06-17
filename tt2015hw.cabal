@@ -19,7 +19,7 @@ executable HW1
   main-is:             HW1.hs
   -- other-modules:
   other-extensions:    UnicodeSyntax
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 
                      , containers >= 0.5.0.0
                      , parsec
                      , transformers >= 0.3.0.0
@@ -30,7 +30,7 @@ executable HW2
   main-is:             HW2.hs
   -- other-modules:
   other-extensions:    UnicodeSyntax
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 
                      , containers >= 0.5.0.0
                      , containers >= 0.5.0.0
                      , parsec
@@ -42,7 +42,7 @@ executable HW3
   main-is:             HW3.hs
   -- other-modules:
   other-extensions:    UnicodeSyntax
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 
                      , containers >= 0.5.0.0
                      , containers >= 0.5.0.0
                      , parsec
@@ -54,7 +54,7 @@ executable HW4
   main-is:             HW4.hs
   -- other-modules:
   other-extensions:    UnicodeSyntax
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 
                      , containers >= 0.5.0.0
                      , containers >= 0.5.0.0
                      , parsec
@@ -66,7 +66,7 @@ executable HW5
   main-is:             HW5.hs
   -- other-modules:
   other-extensions:    UnicodeSyntax
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 
                      , containers >= 0.5.0.0
                      , containers >= 0.5.0.0
                      , parsec
@@ -78,7 +78,7 @@ executable HW6
   main-is:             HW6.hs
   -- other-modules:
   other-extensions:    UnicodeSyntax
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 
                      , containers >= 0.5.0.0
                      , containers >= 0.5.0.0
                      , parsec
@@ -90,7 +90,7 @@ executable HW4Tester
   main-is:             HW4Tester.hs
   -- other-modules:
   other-extensions:    UnicodeSyntax
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 
                      , containers >= 0.5.0.0
                      , containers >= 0.5.0.0
                      , parsec

@@ -3,12 +3,9 @@ module Main where
 
 import LambdaCalculus
 import Conversions
-import Debug.Trace
-import DeBruijn
-import Utils
 
 main :: IO ()
-main = undefined
+main = putStrLn $ "Must be empty: " ++ show test4
 
 cf, cx :: String
 cf = "b"
@@ -21,6 +18,7 @@ vcf = Var cf
 (===) :: Lambda → Lambda → Bool
 (===) a b = (lambdaToDBn a) == (lambdaToDBn b)
 
+test4 :: [Int]
 test4 = testInc ++ testAdd ++ testMul ++ testPow ++ testFact
 
 churchn :: Int → Lambda
