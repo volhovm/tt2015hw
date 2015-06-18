@@ -3,6 +3,7 @@ module Main where
 
 import LambdaCalculus
 import Conversions
+import Utils
 
 main :: IO ()
 main = putStrLn $ "Must be empty: " ++ show test4

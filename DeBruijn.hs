@@ -2,6 +2,7 @@
 module DeBruijn where
 
 import Data.Char
+import Debug.Trace
 
 data DBn = DVar Int | DApp DBn DBn | DAbs DBn
          deriving Eq
@@ -83,6 +84,7 @@ reduceDBn t                   = t
 
 -- Makes normal form out of lambda in DBn notation
 -- normal reduction order
+
 nfDBn :: DBn → DBn
 nfDBn o@(DVar _)          = o
 nfDBn (DAbs a)            = DAbs $ nfDBn a
@@ -90,3 +92,16 @@ nfDBn o@(DApp (DAbs _) _) = nfDBn $ reduceDBn $ o
 nfDBn (DApp a b)          = case nfDBn $ a of
   o@(DAbs _) → nfDBn $ reduceDBn $ DApp o b
   o          → DApp o $ nfDBn b
+
+--nfDBn :: DBn → DBn
+--nfDBn = nfDBn' True
+--
+--nfDBn' :: Bool → DBn → DBn
+--nfDBn' propagate o@(DVar _)          = o
+--nfDBn' propagate (DAbs a)            = trace "nf1" $ DAbs $ nfDBn' propagate a
+--nfDBn' propagate o@(DApp (DAbs _) _) = trace "nf2" $ (if propagate
+--                                        then nfDBn
+--                                        else id) $ reduceDBn o
+--nfDBn' propagate (DApp a b)          = trace "nf3" $ case nfDBn' False $ a of
+--  o@(DAbs _) → (if propagate then nfDBn else id) $! reduceDBn $ DApp o b
+--  o          → DApp o $ (if propagate then nfDBn else nfDBn' False) b
