@@ -1,0 +1,8 @@
+JOB "HW4 data/HW4/oneminute.in /dev/stdout +RTS -p -hc"
+DATE "Mon Jun 22 12:29 2015"
+SAMPLE_UNIT "seconds"
+VALUE_UNIT "bytes"
+BEGIN_SAMPLE 0.00
+END_SAMPLE 0.00
+BEGIN_SAMPLE 0.01
+END_SAMPLE 0.01

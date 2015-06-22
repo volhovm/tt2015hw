@@ -82,26 +82,19 @@ reduceDBn (DApp o@(DAbs _) b) = let (DAbs ans) = substituteDBn o b in
                                   fans
 reduceDBn t                   = t
 
+
+whnf :: DBn → DBn
+whnf o@(DApp (DAbs _) _)  = whnf $ reduceDBn $ o
+whnf (DApp a b)           = case whnf a of
+  o@(DAbs _) → whnf $ reduceDBn $ DApp o b
+  o          → DApp o b
+whnf a                    = a
+
 -- Makes normal form out of lambda in DBn notation
 -- normal reduction order
 
 nfDBn :: DBn → DBn
-nfDBn o@(DVar _)          = o
-nfDBn (DAbs a)            = DAbs $ nfDBn a
-nfDBn o@(DApp (DAbs _) _) = nfDBn $ reduceDBn $ o
-nfDBn (DApp a b)          = case nfDBn $ a of
-  o@(DAbs _) → nfDBn $ reduceDBn $ DApp o b
-  o          → DApp o $ nfDBn b
-
---nfDBn :: DBn → DBn
---nfDBn = nfDBn' True
---
---nfDBn' :: Bool → DBn → DBn
---nfDBn' propagate o@(DVar _)          = o
---nfDBn' propagate (DAbs a)            = trace "nf1" $ DAbs $ nfDBn' propagate a
---nfDBn' propagate o@(DApp (DAbs _) _) = trace "nf2" $ (if propagate
---                                        then nfDBn
---                                        else id) $ reduceDBn o
---nfDBn' propagate (DApp a b)          = trace "nf3" $ case nfDBn' False $ a of
---  o@(DAbs _) → (if propagate then nfDBn else id) $! reduceDBn $ DApp o b
---  o          → DApp o $ (if propagate then nfDBn else nfDBn' False) b
+nfDBn d = case whnf d of
+  o@(DVar _)   → o
+  (DAbs a)     → DAbs $ nfDBn a
+  (DApp a b)   → DApp (nfDBn a) (nfDBn b)

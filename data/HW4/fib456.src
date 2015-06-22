@@ -1,0 +1,8 @@
+let IsZero = \n.n (\u.F) T in
+let Minus1 = (\n.\f.\x.n (\g.\h.h (g f)) (\u.x) (\u.u)) in
+let Plus1 = \n.\f.\x.n f (f x) in
+let Plus = \a.\b.a (Plus1) b in
+let Pair = \a.\b.\s.s a b in
+let fib = \n. Y (\f.\i.\m.\n. If (IsZero i) n (f (Minus1 i) n (Plus m n))) n 0 1 in
+let sum = \n. Y (\s.\i.If (IsZero i) 0 (Plus (f i) (s (Minus1 i)))) n in
+Pair (fib 4) (Pair (fib 5) (fib 6))

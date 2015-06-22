@@ -30,16 +30,13 @@ line s = do
 ----- Lambdas
 
 parseTerm :: Parser Lambda
-parseTerm = lexem $ application <|> parseUnit
+parseTerm = lexem $ (try application) <|> parseUnit
 
 parseUnit :: Parser Lambda
 parseUnit = (Var <$> variable) <|> abstraction <|> brackets parseTerm
 
 application :: Parser Lambda
-application = try $ do
-  a ← parseUnit
-  b ← many1 (try $ spaces >> parseUnit)
-  return $ foldl1 App (a : b)
+application = foldl1 App <$> sepBy1 (try parseUnit) (try spaces)
 
 abstraction :: Parser Lambda
 abstraction = do
@@ -53,7 +50,7 @@ atomic :: Parser Lambda
 atomic = brackets parseTerm <|> (Var <$> variable)
 
 parseLambda :: String → Either ParseError Lambda
-parseLambda = parse (parseTerm <* (spaces >> eof)) "Lambda parsing failed"
+parseLambda = parse (parseTerm) "Lambda parsing failed"
 
 ----- Terms unification
 
